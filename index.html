@@ -402,17 +402,17 @@
   ];
 
   var SYMPTOM_CRITERIA = [
-    { q: 1,  label: "Taken in larger amount / longer period than intended" },
-    { q: 11, label: "Persistent desire or repeated unsuccessful attempts to quit" },
-    { q: 2,  label: "Much time / activity to obtain, use, recover" },
-    { q: 3,  label: "Important social, occupational or recreational activities given up or reduced" },
-    { q: 8,  label: "Use continues despite knowledge of adverse consequences" },
-    { q: 9,  label: "Tolerance" },
-    { q: 4,  label: "Characteristic withdrawal symptoms; substance taken to relieve withdrawal" },
-    { q: 13, label: "Continued use despite social or interpersonal problems" },
-    { q: 7,  label: "Failure to fulfill major role obligation" },
-    { q: 12, label: "Use in physically hazardous situations" },
-    { q: 10, label: "Craving, or a strong desire or urge to eat" }
+    { q: 1,  threshold: 4, label: "Taken in larger amount / longer period than intended" },
+    { q: 11, threshold: 5, label: "Persistent desire or repeated unsuccessful attempts to quit" },
+    { q: 2,  threshold: 5, label: "Much time / activity to obtain, use, recover" },
+    { q: 3,  threshold: 2, label: "Important social, occupational or recreational activities given up or reduced" },
+    { q: 8,  threshold: 4, label: "Use continues despite knowledge of adverse consequences" },
+    { q: 9,  threshold: 5, label: "Tolerance" },
+    { q: 4,  threshold: 4, label: "Characteristic withdrawal symptoms; substance taken to relieve withdrawal" },
+    { q: 13, threshold: 2, label: "Continued use despite social or interpersonal problems" },
+    { q: 7,  threshold: 2, label: "Failure to fulfill major role obligation" },
+    { q: 12, threshold: 2, label: "Use in physically hazardous situations" },
+    { q: 10, threshold: 4, label: "Craving, or a strong desire or urge to eat" }
   ];
 
   var FREQ_LABELS = ["Never", "Less than monthly", "Once a month", "2-3 times a month",
