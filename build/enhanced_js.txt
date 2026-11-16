@@ -1,0 +1,698 @@
+<script>
+(function() {
+  /* =========================================================
+     CLINICAL DATA & THRESHOLDS (mYFAS 2.0)
+     ========================================================= */
+  var QUESTIONS = [
+    { n: 1,  stem: "I ate to the point where I felt physically ill.", threshold: 4, isClinSig: false },
+    { n: 2,  stem: "I spent a lot of time feeling sluggish or tired from overeating.", threshold: 5, isClinSig: false },
+    { n: 3,  stem: "I avoided work, school or social activities because I was afraid I would overeat there.", threshold: 2, isClinSig: false },
+    { n: 4,  stem: "If I had emotional problems because I hadn't eaten certain foods, I would eat those foods to feel better.", threshold: 4, isClinSig: false },
+    { n: 5,  stem: "My eating behavior caused me a lot of distress.", threshold: 5, isClinSig: true },
+    { n: 6,  stem: "I had significant problems in my life because of food and eating. These may have been problems with my daily routine, work, school, friends, family, or health.", threshold: 5, isClinSig: true },
+    { n: 7,  stem: "My overeating got in the way of me taking care of my family or doing household chores.", threshold: 2, isClinSig: false },
+    { n: 8,  stem: "I kept eating in the same way even though my eating caused emotional problems.", threshold: 4, isClinSig: false },
+    { n: 9,  stem: "Eating the same amount of food did not give me as much enjoyment as it used to.", threshold: 5, isClinSig: false },
+    { n: 10, stem: "I had such strong urges to eat certain foods that I couldn't think of anything else.", threshold: 4, isClinSig: false },
+    { n: 11, stem: "I tried and failed to cut down on or stop eating certain foods.", threshold: 5, isClinSig: false },
+    { n: 12, stem: "I was so distracted by eating that I could have been hurt (e.g., when driving a car, crossing the street, operating machinery).", threshold: 2, isClinSig: false },
+    { n: 13, stem: "My friends or family were worried about how much I overate.", threshold: 2, isClinSig: false }
+  ];
+
+  var SYMPTOM_CRITERIA = [
+    { q: 1,  threshold: 4, label: "Taken in larger amount / longer period than intended" },
+    { q: 11, threshold: 5, label: "Persistent desire or repeated unsuccessful attempts to quit" },
+    { q: 2,  threshold: 5, label: "Much time / activity to obtain, use, recover" },
+    { q: 3,  threshold: 2, label: "Important social, occupational or recreational activities given up or reduced" },
+    { q: 8,  threshold: 4, label: "Use continues despite knowledge of adverse consequences" },
+    { q: 9,  threshold: 5, label: "Tolerance" },
+    { q: 4,  threshold: 4, label: "Characteristic withdrawal symptoms; substance taken to relieve withdrawal" },
+    { q: 13, threshold: 2, label: "Continued use despite social or interpersonal problems" },
+    { q: 7,  threshold: 2, label: "Failure to fulfill major role obligation" },
+    { q: 12, threshold: 2, label: "Use in physically hazardous situations" },
+    { q: 10, threshold: 4, label: "Craving, or a strong desire or urge to eat" }
+  ];
+
+  var FREQ_LABELS = [
+    "Never",
+    "Less than monthly",
+    "Once a month",
+    "2–3 times a month",
+    "Once a week",
+    "2–3 times a week",
+    "4–6 times a week",
+    "Every day"
+  ];
+
+  /* =========================================================
+     APPLICATION STATE
+     ========================================================= */
+  var state = {
+    mode: "focus",          // "focus" | "list"
+    currentIndex: 0,        // 0..12
+    answers: new Array(13).fill(null),
+    lastResult: null,
+    advanceTimer: null
+  };
+
+  /* =========================================================
+     DOM REFERENCES
+     ========================================================= */
+  var pillTrack = document.getElementById("pillTrack");
+  var progressCounter = document.getElementById("progressCounter");
+  var btnModeFocus = document.getElementById("btnModeFocus");
+  var btnModeList = document.getElementById("btnModeList");
+  var btnDemo = document.getElementById("btnDemo");
+  var btnTopReset = document.getElementById("btnTopReset");
+  var kbdHint = document.getElementById("kbdHint");
+
+  var focusContainer = document.getElementById("focusContainer");
+  var listContainer = document.getElementById("listContainer");
+  var listActionBar = document.getElementById("listActionBar");
+  var btnCalcList = document.getElementById("btnCalcList");
+  var btnResetList = document.getElementById("btnResetList");
+
+  var errorBanner = document.getElementById("errorBanner");
+  var errorText = document.getElementById("errorText");
+
+  var resultsSection = document.getElementById("resultsSection");
+  var criteriaTbody = document.getElementById("criteriaTbody");
+  var btnCopySummary = document.getElementById("btnCopySummary");
+  var btnStartOver = document.getElementById("btnStartOver");
+  var toastEl = document.getElementById("toast");
+  var toastMsg = document.getElementById("toastMsg");
+
+  /* =========================================================
+     INITIALIZE PROGRESS PILLS & CRITERIA TABLE
+     ========================================================= */
+  function initPills() {
+    pillTrack.innerHTML = "";
+    for (var i = 0; i < 13; i++) {
+      (function(idx) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "prog-pill";
+        btn.title = "Jump to Item " + (idx + 1);
+        btn.setAttribute("aria-label", "Item " + (idx + 1));
+        btn.addEventListener("click", function() {
+          jumpToQuestion(idx);
+        });
+        pillTrack.appendChild(btn);
+      })(i);
+    }
+  }
+
+  function updateProgressUI() {
+    var answeredCount = 0;
+    var pills = pillTrack.children;
+
+    for (var i = 0; i < 13; i++) {
+      var isAns = state.answers[i] !== null;
+      if (isAns) answeredCount++;
+
+      var pill = pills[i];
+      pill.classList.toggle("answered", isAns);
+      pill.classList.toggle("current", state.mode === "focus" && state.currentIndex === i);
+      if (isAns) pill.classList.remove("missing-pill");
+    }
+
+    progressCounter.textContent = answeredCount + " / 13";
+  }
+
+  function jumpToQuestion(idx) {
+    hideError();
+    if (state.mode === "focus") {
+      state.currentIndex = idx;
+      renderFocusQuestion();
+      updateProgressUI();
+    } else {
+      var target = document.getElementById("list-item-" + (idx + 1));
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+  }
+
+  /* =========================================================
+     BUILD SCALE OPTIONS HELPER
+     ========================================================= */
+  function createScaleElement(qIndex, groupPrefix, onSelectCallback) {
+    var grid = document.createElement("div");
+    grid.className = "scale-grid";
+    grid.setAttribute("role", "radiogroup");
+    grid.setAttribute("aria-label", "Frequency for Item " + (qIndex + 1));
+
+    for (var val = 0; val < 8; val++) {
+      (function(scoreVal) {
+        var label = document.createElement("label");
+        label.className = "scale-option";
+
+        var input = document.createElement("input");
+        input.type = "radio";
+        input.name = groupPrefix + "-q" + (qIndex + 1);
+        input.value = scoreVal;
+        if (state.answers[qIndex] === scoreVal) {
+          input.checked = true;
+        }
+
+        input.addEventListener("change", function() {
+          state.answers[qIndex] = scoreVal;
+          hideError();
+          updateProgressUI();
+          if (onSelectCallback) onSelectCallback(scoreVal);
+        });
+
+        var numSpan = document.createElement("span");
+        numSpan.className = "opt-num";
+        numSpan.textContent = scoreVal;
+
+        var txtSpan = document.createElement("span");
+        txtSpan.className = "opt-label";
+        txtSpan.textContent = FREQ_LABELS[scoreVal];
+
+        label.appendChild(input);
+        label.appendChild(numSpan);
+        label.appendChild(txtSpan);
+        grid.appendChild(label);
+      })(val);
+    }
+    return grid;
+  }
+
+  /* =========================================================
+     FOCUS MODE RENDERING & KEYBOARD NAVIGATION
+     ========================================================= */
+  function renderFocusQuestion() {
+    clearTimeout(state.advanceTimer);
+    var idx = state.currentIndex;
+    var q = QUESTIONS[idx];
+
+    focusContainer.innerHTML = "";
+
+    var slide = document.createElement("div");
+    slide.className = "focus-slide";
+
+    var header = document.createElement("div");
+    header.className = "q-header";
+
+    var tag = document.createElement("div");
+    tag.className = "q-tag";
+    tag.innerHTML = "<span>Question " + (idx + 1) + " of 13</span>";
+
+    if (q.isClinSig) {
+      var badge = document.createElement("span");
+      badge.className = "q-clin-badge";
+      badge.textContent = "Clinical Significance Item";
+      tag.appendChild(badge);
+    }
+
+    header.appendChild(tag);
+    slide.appendChild(header);
+
+    var stem = document.createElement("div");
+    stem.className = "q-stem";
+    stem.textContent = q.stem;
+    slide.appendChild(stem);
+
+    var scale = createScaleElement(idx, "focus", function() {
+      // Auto-advance after brief tactile confirmation
+      clearTimeout(state.advanceTimer);
+      state.advanceTimer = setTimeout(function() {
+        if (state.currentIndex < 12) {
+          state.currentIndex++;
+          renderFocusQuestion();
+          updateProgressUI();
+        } else {
+          // On final question, trigger calculation if all answered
+          var firstUnanswered = state.answers.indexOf(null);
+          if (firstUnanswered === -1) {
+            evaluateAndShowResults();
+          } else {
+            renderFocusQuestion();
+          }
+        }
+      }, 260);
+    });
+    slide.appendChild(scale);
+
+    focusContainer.appendChild(slide);
+
+    // Navigation Footer
+    var nav = document.createElement("div");
+    nav.className = "focus-nav";
+
+    var prevBtn = document.createElement("button");
+    prevBtn.type = "button";
+    prevBtn.className = "btn btn-secondary";
+    prevBtn.disabled = idx === 0;
+    prevBtn.innerHTML = "&larr; Previous";
+    prevBtn.addEventListener("click", function() {
+      if (state.currentIndex > 0) {
+        state.currentIndex--;
+        renderFocusQuestion();
+        updateProgressUI();
+      }
+    });
+
+    var rightGroup = document.createElement("div");
+    rightGroup.style.display = "flex";
+    rightGroup.style.gap = "10px";
+
+    if (idx < 12) {
+      var nextBtn = document.createElement("button");
+      nextBtn.type = "button";
+      nextBtn.className = "btn btn-secondary";
+      nextBtn.innerHTML = "Next &rarr;";
+      nextBtn.addEventListener("click", function() {
+        state.currentIndex++;
+        renderFocusQuestion();
+        updateProgressUI();
+      });
+      rightGroup.appendChild(nextBtn);
+    }
+
+    var allAnswered = state.answers.indexOf(null) === -1;
+    if (idx === 12 || allAnswered) {
+      var calcBtn = document.createElement("button");
+      calcBtn.type = "button";
+      calcBtn.className = "btn btn-primary";
+      calcBtn.textContent = "Calculate Score";
+      calcBtn.addEventListener("click", evaluateAndShowResults);
+      rightGroup.appendChild(calcBtn);
+    }
+
+    nav.appendChild(prevBtn);
+    nav.appendChild(rightGroup);
+    focusContainer.appendChild(nav);
+  }
+
+  /* =========================================================
+     FULL LIST MODE RENDERING
+     ========================================================= */
+  function renderFullList() {
+    listContainer.innerHTML = "";
+    QUESTIONS.forEach(function(q, idx) {
+      var block = document.createElement("div");
+      block.className = "q-block";
+      block.id = "list-item-" + q.n;
+
+      var header = document.createElement("div");
+      header.className = "q-header";
+
+      var tag = document.createElement("div");
+      tag.className = "q-tag";
+      tag.innerHTML = "<span>Item " + q.n + " of 13</span>";
+
+      if (q.isClinSig) {
+        var badge = document.createElement("span");
+        badge.className = "q-clin-badge";
+        badge.textContent = "Clinical Significance";
+        tag.appendChild(badge);
+      }
+
+      var missLbl = document.createElement("span");
+      missLbl.className = "q-missing-label";
+      missLbl.textContent = "Required";
+
+      header.appendChild(tag);
+      header.appendChild(missLbl);
+      block.appendChild(header);
+
+      var stem = document.createElement("div");
+      stem.className = "q-stem";
+      stem.textContent = q.stem;
+      block.appendChild(stem);
+
+      var scale = createScaleElement(idx, "list", function() {
+        block.classList.remove("is-missing");
+      });
+      block.appendChild(scale);
+
+      listContainer.appendChild(block);
+    });
+  }
+
+  /* =========================================================
+     MODE SWITCHING
+     ========================================================= */
+  function setMode(newMode) {
+    state.mode = newMode;
+    clearTimeout(state.advanceTimer);
+    hideError();
+
+    if (newMode === "focus") {
+      btnModeFocus.classList.add("active");
+      btnModeFocus.setAttribute("aria-selected", "true");
+      btnModeList.classList.remove("active");
+      btnModeList.setAttribute("aria-selected", "false");
+
+      focusContainer.style.display = "flex";
+      listContainer.style.display = "none";
+      listActionBar.style.display = "none";
+      kbdHint.style.display = "inline-flex";
+
+      renderFocusQuestion();
+    } else {
+      btnModeList.classList.add("active");
+      btnModeList.setAttribute("aria-selected", "true");
+      btnModeFocus.classList.remove("active");
+      btnModeFocus.setAttribute("aria-selected", "false");
+
+      focusContainer.style.display = "none";
+      listContainer.style.display = "block";
+      listActionBar.style.display = "flex";
+      kbdHint.style.display = "none";
+
+      renderFullList();
+    }
+    updateProgressUI();
+  }
+
+  btnModeFocus.addEventListener("click", function() { setMode("focus"); });
+  btnModeList.addEventListener("click", function() { setMode("list"); });
+
+  /* =========================================================
+     KEYBOARD SHORTCUTS (0–7 & ARROW KEYS IN FOCUS MODE)
+     ========================================================= */
+  document.addEventListener("keydown", function(e) {
+    if (state.mode !== "focus") return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+    if (e.key >= "0" && e.key <= "7") {
+      e.preventDefault();
+      var val = parseInt(e.key, 10);
+      state.answers[state.currentIndex] = val;
+      hideError();
+      renderFocusQuestion();
+      updateProgressUI();
+
+      clearTimeout(state.advanceTimer);
+      state.advanceTimer = setTimeout(function() {
+        if (state.currentIndex < 12) {
+          state.currentIndex++;
+          renderFocusQuestion();
+          updateProgressUI();
+        } else if (state.answers.indexOf(null) === -1) {
+          evaluateAndShowResults();
+        }
+      }, 240);
+    } else if (e.key === "ArrowRight" && state.currentIndex < 12) {
+      state.currentIndex++;
+      renderFocusQuestion();
+      updateProgressUI();
+    } else if (e.key === "ArrowLeft" && state.currentIndex > 0) {
+      state.currentIndex--;
+      renderFocusQuestion();
+      updateProgressUI();
+    }
+  });
+
+  /* =========================================================
+     SCORING & DIAGNOSTIC DASHBOARD RENDERING
+     ========================================================= */
+  function showError(msg) {
+    errorText.textContent = msg;
+    errorBanner.classList.add("show");
+  }
+
+  function hideError() {
+    errorBanner.classList.remove("show");
+  }
+
+  function evaluateAndShowResults() {
+    var missed = [];
+    var pills = pillTrack.children;
+
+    for (var i = 0; i < 13; i++) {
+      if (state.answers[i] === null) {
+        missed.push(i + 1);
+        pills[i].classList.add("missing-pill");
+        if (state.mode === "list") {
+          var blk = document.getElementById("list-item-" + (i + 1));
+          if (blk) blk.classList.add("is-missing");
+        }
+      }
+    }
+
+    if (missed.length > 0) {
+      var label = missed.length === 1
+        ? "Item " + missed[0]
+        : "Items " + missed.slice(0, -1).join(", ") + " and " + missed[missed.length - 1];
+      showError("Please complete " + label + " before calculating your clinical score.");
+
+      if (state.mode === "focus") {
+        state.currentIndex = missed[0] - 1;
+        renderFocusQuestion();
+        updateProgressUI();
+      } else {
+        var firstBlk = document.getElementById("list-item-" + missed[0]);
+        if (firstBlk) firstBlk.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      return;
+    }
+
+    hideError();
+
+    // Compute 11 DSM-5 Symptom Criteria
+    var symptomCount = 0;
+    var criteriaResults = SYMPTOM_CRITERIA.map(function(crit, idx) {
+      var score = state.answers[crit.q - 1];
+      var met = score >= crit.threshold;
+      if (met) symptomCount++;
+      return {
+        index: idx + 1,
+        q: crit.q,
+        label: crit.label,
+        score: score,
+        threshold: crit.threshold,
+        met: met
+      };
+    });
+
+    // Clinical Significance: Q5 >= 5 or Q6 >= 5
+    var q5Score = state.answers[4];
+    var q6Score = state.answers[5];
+    var clinSigMet = q5Score >= 5 || q6Score >= 5;
+
+    // Classification
+    var severityKey = "none";
+    var severityTitle = "No Food Addiction";
+    var severityDesc = "";
+    var gaugeColor = "var(--sev-none)";
+
+    if (clinSigMet && symptomCount >= 6) {
+      severityKey = "severe";
+      severityTitle = "Severe Food Addiction";
+      severityDesc = "6 or more DSM-5 symptom criteria met alongside clinically significant impairment or distress (Q5 or Q6 ≥ 5).";
+      gaugeColor = "var(--sev-sev)";
+    } else if (clinSigMet && symptomCount >= 4) {
+      severityKey = "moderate";
+      severityTitle = "Moderate Food Addiction";
+      severityDesc = "4–5 DSM-5 symptom criteria met alongside clinically significant impairment or distress (Q5 or Q6 ≥ 5).";
+      gaugeColor = "var(--sev-mod)";
+    } else if (clinSigMet && symptomCount >= 2) {
+      severityKey = "mild";
+      severityTitle = "Mild Food Addiction";
+      severityDesc = "2–3 DSM-5 symptom criteria met alongside clinically significant impairment or distress (Q5 or Q6 ≥ 5).";
+      gaugeColor = "var(--sev-mild)";
+    } else {
+      severityKey = "none";
+      severityTitle = "No Food Addiction";
+      gaugeColor = "var(--sev-none)";
+      if (!clinSigMet && symptomCount >= 2) {
+        severityDesc = symptomCount + " symptom criteria met, but clinical significance threshold (Q5 or Q6 ≥ 5) was not met. Both gates are required for a positive screen.";
+      } else {
+        severityDesc = "1 or fewer DSM-5 symptom criteria met. Responses are not consistent with addictive-like eating on the mYFAS 2.0.";
+      }
+    }
+
+    state.lastResult = {
+      symptomCount: symptomCount,
+      clinSigMet: clinSigMet,
+      q5Score: q5Score,
+      q6Score: q6Score,
+      severityKey: severityKey,
+      severityTitle: severityTitle,
+      severityDesc: severityDesc,
+      criteriaResults: criteriaResults
+    };
+
+    renderDashboard(state.lastResult, gaugeColor);
+  }
+
+  function renderDashboard(res, gaugeColor) {
+    resultsSection.classList.add("show");
+
+    // Animate Radial SVG Gauge (circumference = 2 * PI * 76 = 477.52)
+    var circumference = 477.52;
+    var offset = circumference - (res.symptomCount / 11) * circumference;
+    var gaugeCircle = document.getElementById("gaugeCircle");
+    gaugeCircle.style.stroke = gaugeColor;
+    requestAnimationFrame(function() {
+      gaugeCircle.style.strokeDashoffset = offset;
+    });
+
+    document.getElementById("gaugeScore").textContent = res.symptomCount;
+
+    // Severity Pill & Title
+    var sevPill = document.getElementById("sevPill");
+    sevPill.className = "severity-pill sev-" + res.severityKey;
+    sevPill.textContent = "mYFAS 2.0 Classification";
+
+    document.getElementById("diagTitle").textContent = res.severityTitle;
+    document.getElementById("diagSummary").textContent = res.severityDesc;
+
+    // Gate Cards
+    var sympGateBadge = document.getElementById("sympGateBadge");
+    sympGateBadge.textContent = res.symptomCount + " / 11 Met";
+    sympGateBadge.className = "gate-status " + (res.symptomCount >= 2 ? "gate-met" : "gate-unmet");
+    document.getElementById("sympGateVal").textContent = res.symptomCount + (res.symptomCount === 1 ? " Symptom" : " Symptoms");
+
+    var clinGateBadge = document.getElementById("clinGateBadge");
+    clinGateBadge.textContent = res.clinSigMet ? "Met" : "Not Met";
+    clinGateBadge.className = "gate-status " + (res.clinSigMet ? "gate-met" : "gate-unmet");
+    document.getElementById("clinGateVal").textContent = "Q5: " + res.q5Score + "/7 · Q6: " + res.q6Score + "/7";
+
+    // Render 11 DSM-5 Criteria Rows with Threshold Comparison Bars
+    criteriaTbody.innerHTML = "";
+    res.criteriaResults.forEach(function(item) {
+      var tr = document.createElement("tr");
+      if (item.met) tr.className = "row-met";
+
+      var fillPct = (item.score / 7) * 100;
+      var markerPct = (item.threshold / 7) * 100;
+
+      tr.innerHTML =
+        "<td class='mono-cell'>" + item.index + "</td>" +
+        "<td>" + item.label + "</td>" +
+        "<td class='mono-cell'>Q" + item.q + "</td>" +
+        "<td class='thresh-viz'>" +
+          "<div class='thresh-track'>" +
+            "<div class='thresh-fill " + (item.met ? "is-met" : "is-unmet") + "' style='width:" + fillPct + "%'></div>" +
+            "<div class='thresh-marker' style='left:" + markerPct + "%' title='Threshold: ≥" + item.threshold + "'></div>" +
+          "</div>" +
+          "<div class='thresh-caption'>" +
+            "<span>Score: <strong>" + item.score + "</strong>/7</span>" +
+            "<span>Req: &ge;" + item.threshold + "</span>" +
+          "</div>" +
+        "</td>" +
+        "<td>" +
+          "<span class='crit-pill " + (item.met ? "met" : "unmet") + "'>" +
+            "<span class='crit-dot'></span>" +
+            (item.met ? "Met" : "Not met") +
+          "</span>" +
+        "</td>";
+
+      criteriaTbody.appendChild(tr);
+    });
+
+    resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  /* =========================================================
+     DEMO DATA, RESET, AND CLIPBOARD EXPORT
+     ========================================================= */
+  function fillDemoData() {
+    // Realistic moderate food addiction profile (5 symptoms + clinical significance met)
+    state.answers = [4, 5, 1, 5, 5, 4, 1, 4, 3, 5, 5, 0, 2];
+    state.currentIndex = 12;
+    hideError();
+
+    if (state.mode === "focus") {
+      renderFocusQuestion();
+    } else {
+      renderFullList();
+    }
+    updateProgressUI();
+    evaluateAndShowResults();
+    showToast("Loaded sample clinical profile");
+  }
+
+  function resetAll() {
+    clearTimeout(state.advanceTimer);
+    state.answers = new Array(13).fill(null);
+    state.currentIndex = 0;
+    state.lastResult = null;
+    hideError();
+    resultsSection.classList.remove("show");
+
+    var pills = pillTrack.children;
+    for (var i = 0; i < pills.length; i++) {
+      pills[i].classList.remove("missing-pill");
+    }
+
+    if (state.mode === "focus") {
+      renderFocusQuestion();
+    } else {
+      renderFullList();
+    }
+    updateProgressUI();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function copyClinicalSummary() {
+    if (!state.lastResult) return;
+    var r = state.lastResult;
+    var lines = [
+      "mYFAS 2.0 FOOD ADDICTION SCREENING SUMMARY",
+      "------------------------------------------",
+      "Classification: " + r.severityTitle,
+      "DSM-5 Symptom Count: " + r.symptomCount + " / 11",
+      "Clinical Significance (Q5 or Q6 >= 5): " + (r.clinSigMet ? "Met" : "Not Met") + " (Q5=" + r.q5Score + ", Q6=" + r.q6Score + ")",
+      "",
+      "DSM-5 Symptom Criteria Breakdown:"
+    ];
+
+    r.criteriaResults.forEach(function(c) {
+      lines.push(
+        (c.met ? "[MET]     " : "[NOT MET] ") +
+        "Q" + c.q + " (" + c.score + "/7, req >=" + c.threshold + "): " + c.label
+      );
+    });
+
+    lines.push("");
+    lines.push("Note: Self-report screening tool (Schulte & Gearhardt, 2017); not a clinical diagnosis.");
+
+    var text = lines.join("\n");
+    var textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand("copy");
+      showToast("Clinical summary copied to clipboard");
+    } catch (err) {
+      showToast("Unable to copy summary");
+    }
+    document.body.removeChild(textarea);
+  }
+
+  var toastTimeout;
+  function showToast(message) {
+    toastMsg.textContent = message;
+    toastEl.classList.add("show");
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(function() {
+      toastEl.classList.remove("show");
+    }, 2800);
+  }
+
+  /* =========================================================
+     WIRE UP GLOBAL EVENTS & INITIAL RENDER
+     ========================================================= */
+  btnDemo.addEventListener("click", fillDemoData);
+  btnTopReset.addEventListener("click", resetAll);
+  btnResetList.addEventListener("click", resetAll);
+  btnStartOver.addEventListener("click", resetAll);
+  btnCalcList.addEventListener("click", evaluateAndShowResults);
+  btnCopySummary.addEventListener("click", copyClinicalSummary);
+
+  initPills();
+  renderFocusQuestion();
+  updateProgressUI();
+})();
+</script>
+</body>
+</html>
