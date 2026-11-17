@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="YFAS-C 2.0 Calculator - Free, open-access assessment. Adapted from Ashley N. Gearhardt, UMich FASTlab. Source: https://sites.lsa.umich.edu/fastlab/yale-food-addiction-scale/">
-  <title>YFAS-C 2.0 Calculator</title>
+  <meta name="description" content="Anticipated Effects of Food Scale - food expectancies for highly processed foods. Source: https://sites.lsa.umich.edu/fastlab/yale-food-addiction-scale/">
+  <title>Anticipated Effects of Food Scale (AEFS)</title>
   <style>
   :root {
     --bg: #f8f7f4;
@@ -1038,7 +1038,7 @@
 <body>
   <header class="topbar">
     <div class="topbar-inner">
-      <div class="brand-pill"><div class="brand-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>YFAS-C 2.0 Calculator</span></div>
+      <div class="brand-pill"><div class="brand-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><span>AEFS Calculator</span></div>
       <div class="topbar-controls">
         <div class="segmented">
           <button id="btnModeFocus" class="active">Focus Mode</button>
@@ -1048,14 +1048,14 @@
         <button id="btnTopReset">Reset</button>
       </div>
     </div>
-    <div class="progress-strip"><div class="pill-track" id="pillTrack"></div><div class="progress-counter" id="progressCounter">0 / 18</div></div>
+    <div class="progress-strip"><div class="pill-track" id="pillTrack"></div><div class="progress-counter" id="progressCounter">0 / 31</div></div>
   </header>
 
   <main class="container">
     <section class="hero">
-      <div class="hero-badge">YFAS-C 2.0</div>
-      <h1>YFAS-C 2.0 Calculator</h1>
-      <p>YFAS-C 2.0 self-report screening instrument. Gearhardt, A. N., et al. (2013). The Yale Food Addiction Scale for Children. Psychology of Addictive Behaviors, 27(2), 496-506.</p>
+      <div class="hero-badge">AEFS</div>
+      <h1>AEFS Calculator</h1>
+      <p>AEFS self-report screening instrument. Meule, A., et al. (2019). Anticipated Effects of Food Scale (AEFS). Frontiers in Psychology, 10, 1957.</p>
     </section>
 
     <div class="clinical-notice">
@@ -1065,8 +1065,8 @@
 
     <section class="card" id="questionnaireSection">
       <div class="card-top">
-        <div><h2>YFAS-C 2.0 Questionnaire</h2><p class="subtext">Rate how much each statement applies to you from 0 (Never) to 4 (Extreme).</p></div>
-        <div class="kbd-hint" id="kbdHint">Press keys 0-4 to answer &amp; advance</div>
+        <div><h2>AEFS Questionnaire</h2><p class="subtext">Rate how much each statement applies to you from 1 to 6.</p></div>
+        <div class="kbd-hint" id="kbdHint">Press keys 0-5 to answer &amp; advance</div>
       </div>
 
       <div id="focusContainer" class="focus-stage"></div>
@@ -1078,13 +1078,13 @@
     <section class="card results-panel" id="resultsSection" aria-live="polite">
       <div class="dashboard-hero">
         <div class="gauge-box"><svg class="gauge-svg" viewBox="0 0 180 180"><circle class="gauge-track" cx="90" cy="90" r="76"/><circle class="gauge-fill" id="gaugeCircle" cx="90" cy="90" r="76"/></svg>
-          <div class="gauge-center"><div class="gauge-score" id="gaugeScore">0</div><div class="gauge-denom" id="gaugeDenom">of 18 symptoms</div></div>
+          <div class="gauge-center"><div class="gauge-score" id="gaugeScore">0</div><div class="gauge-denom" id="gaugeDenom">of 31 symptoms</div></div>
         </div>
         <div><div class="severity-pill sev-none" id="sevPill">Screening Outcome</div><h2 class="diagnosis-title" id="diagTitle">No Food Addiction</h2><p class="diagnosis-summary" id="diagSummary"></p></div>
       </div>
 
       <div class="gate-grid">
-        <div class="gate-card"><div class="gate-card-head"><span class="gate-label">Gate 1 · Symptom Threshold</span><span class="gate-status gate-unmet" id="sympGateBadge">0 / 18 Met</span></div><div class="gate-val" id="sympGateVal">0 Symptoms</div><p class="gate-explain">At least <strong>2 of 18</strong> symptoms must meet their respective frequency thresholds to classify as Mild (2-3), Moderate (4-5), or Severe (6+).</p></div>
+        <div class="gate-card"><div class="gate-card-head"><span class="gate-label">Gate 1 · Symptom Threshold</span><span class="gate-status gate-unmet" id="sympGateBadge">0 / 31 Met</span></div><div class="gate-val" id="sympGateVal">0 Symptoms</div><p class="gate-explain">At least <strong>2 of 31</strong> symptoms must meet their respective frequency thresholds to classify as Mild (2-3), Moderate (4-5), or Severe (6+).</p></div>
         <div class="gate-card" id="clinGateCard" style="display: none;"><div class="gate-card-head"><span class="gate-label">Gate 2 · Clinical Significance</span><span class="gate-status gate-unmet" id="clinGateBadge">Not Met</span></div><div class="gate-val" id="clinGateVal">Q5: — · Q6: —</div><p class="gate-explain">Requires distress (<strong>Q5 &ge; 5</strong>) or life impairment (<strong>Q6 &ge; 5</strong>) at least 2-3 times/week. Without clinical significance, any symptom count classifies as <em>No Food Addiction</em>.</p></div>
       </div>
 
@@ -1101,14 +1101,14 @@
       </div>
     </section>
 
-    <footer class="footnote"><strong>Reference &amp; Scoring Algorithm:</strong> Gearhardt, A. N., et al. (2013). The Yale Food Addiction Scale for Children. Psychology of Addictive Behaviors, 27(2), 496-506.</footer>
+    <footer class="footnote"><strong>Reference &amp; Scoring Algorithm:</strong> Meule, A., et al. (2019). Anticipated Effects of Food Scale (AEFS). Frontiers in Psychology, 10, 1957.</footer>
   </main>
 
   <div class="toast" id="toast" role="status" aria-live="polite"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.6"><polyline points="20 6 9 17 4 12"/></svg><span id="toastMsg">Copied clinical summary to clipboard</span></div>
 
   <script>
   (function() {
-    var state = { mode: "focus", currentIndex: 0, answers: new Array(18).fill(null), lastResult: null, advanceTimer: null };
+    var state = { mode: "focus", currentIndex: 0, answers: new Array(31).fill(null), lastResult: null, advanceTimer: null };
     var pillTrack = document.getElementById("pillTrack");
     var progressCounter = document.getElementById("progressCounter");
     var btnModeFocus = document.getElementById("btnModeFocus");
@@ -1132,7 +1132,7 @@
 
     function initPills() {
       pillTrack.innerHTML = "";
-      for (var i = 0; i < 18; i++) {
+      for (var i = 0; i < 31; i++) {
         (function(idx) {
           var btn = document.createElement("button");
           btn.type = "button";
@@ -1148,14 +1148,14 @@
     function updateProgressUI() {
       var answeredCount = 0;
       var pills = pillTrack.children;
-      for (var i = 0; i < 18; i++) {
+      for (var i = 0; i < 31; i++) {
         var isAns = state.answers[i] !== null;
         if (isAns) answeredCount++;
         var pill = pills[i];
         pill.classList.toggle("answered", isAns);
         pill.classList.toggle("current", state.mode === "focus" && state.currentIndex === i);
       }
-      progressCounter.textContent = answeredCount + " / 18";
+      progressCounter.textContent = answeredCount + " / 31";
     }
 
     function jumpToQuestion(idx) {
@@ -1177,14 +1177,14 @@
       grid.setAttribute("aria-label", "Frequency for Item " + (qIndex + 1));
 
       var labels = {8: ['Never', 'Less than monthly', 'Once a month', '2-3 times a month', 'Once a week', '2-3 times a week', '4-6 times a week', 'Every day'], 5: ['None', 'Mild', 'Moderate', 'Severe', 'Extreme'], 6: ['Definitely will not', 'Probably will not', 'Maybe will not', 'Maybe will', 'Probably will', 'Definitely will']};
-      for (var val = 0; val < 5; val++) {
+      for (var val = 0; val < 6; val++) {
         var label = document.createElement("label");
         label.className = "scale-option";
         var input = document.createElement("input");
         input.type = "radio";
         input.name = groupPrefix + "-q" + (qIndex + 1);
         var valAttr = val + 1;
-        if (5 == 6) valAttr = val;
+        if (6 == 6) valAttr = val;
         input.value = valAttr;
         if (state.answers[qIndex] === valAttr) input.checked = true;
         input.addEventListener("change", function() {
@@ -1218,7 +1218,7 @@
       header.className = "q-header";
       var tag = document.createElement("div");
       tag.className = "q-tag";
-      tag.textContent = "Question " + (idx + 1) + " of " + 18;
+      tag.textContent = "Question " + (idx + 1) + " of " + 31;
       header.appendChild(tag);
       slide.appendChild(header);
 
@@ -1244,7 +1244,7 @@
       var rightGroup = document.createElement("div");
       rightGroup.style.display = "flex";
       rightGroup.style.gap = "10px";
-      if (idx < 18 - 1) {
+      if (idx < 31 - 1) {
         var nextBtn = document.createElement("button");
         nextBtn.type = "button";
         nextBtn.className = "btn btn-secondary";
@@ -1257,7 +1257,7 @@
         rightGroup.appendChild(nextBtn);
       }
       var allAnswered = state.answers.indexOf(null) === -1;
-      if (idx === 18 - 1 || allAnswered) {
+      if (idx === 31 - 1 || allAnswered) {
         var calcBtn = document.createElement("button");
         calcBtn.type = "button";
         calcBtn.className = "btn btn-primary";
